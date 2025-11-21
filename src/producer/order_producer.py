@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""
-Order Producer
-Produces order messages to Kafka with JSON serialization
-(Note: For Avro, see order_producer_avro.py - using JSON for simplicity)
-"""
+
 
 import time
 import random
@@ -11,7 +7,7 @@ import json
 import logging
 from confluent_kafka import Producer
 
-# Configure logging
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -20,15 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class OrderProducer:
-    """Kafka producer for order messages using JSON serialization"""
-    
+
     def __init__(self, bootstrap_servers='localhost:9092'):
-        """
-        Initialize the order producer
-        
-        Args:
-            bootstrap_servers: Kafka broker address
-        """
+
         self.bootstrap_servers = bootstrap_servers
         
         # Producer configuration
@@ -57,13 +47,7 @@ class OrderProducer:
         logger.info(f"Order Producer initialized - Broker: {bootstrap_servers}")
     
     def delivery_callback(self, err, msg):
-        """
-        Callback for message delivery reports
-        
-        Args:
-            err: Delivery error (if any)
-            msg: Delivered message
-        """
+
         if err:
             logger.error(f"❌ Delivery failed for order: {err}")
         else:
@@ -75,15 +59,7 @@ class OrderProducer:
             )
     
     def generate_order(self, order_id):
-        """
-        Generate a random order message
-        
-        Args:
-            order_id: Order identifier
-            
-        Returns:
-            Order dictionary
-        """
+
         products = [
             'Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Headphones',
             'Webcam', 'USB Cable', 'External Drive', 'Mouse Pad', 'Docking Station'
@@ -117,13 +93,7 @@ class OrderProducer:
         return order
     
     def produce_order(self, order, topic='orders'):
-        """
-        Produce a single order message
-        
-        Args:
-            order: Order dictionary
-            topic: Target Kafka topic
-        """
+
         try:
             # Serialize to JSON
             value_bytes = json.dumps(order).encode('utf-8')
@@ -140,14 +110,7 @@ class OrderProducer:
             logger.error(f"Failed to produce order {order['orderId']}: {e}")
     
     def produce_batch(self, count=20, interval=1.0, topic='orders'):
-        """
-        Produce a batch of order messages
-        
-        Args:
-            count: Number of messages to produce
-            interval: Delay between messages (seconds)
-            topic: Target Kafka topic
-        """
+
         logger.info(f"🚀 Starting to produce {count} orders to topic '{topic}'...")
         logger.info("=" * 70)
         
@@ -164,7 +127,6 @@ class OrderProducer:
             if interval > 0 and i < count:
                 time.sleep(interval)
         
-        # Wait for all messages to be delivered
         logger.info("\n⏳ Flushing remaining messages...")
         self.producer.flush()
         
@@ -178,20 +140,16 @@ class OrderProducer:
 
 
 def main():
-    """Main execution function"""
     try:
-        # Initialize producer
         producer = OrderProducer()
         
-        # Produce a batch of orders
-        # Adjust count and interval as needed
         producer.produce_batch(
             count=30,        # Number of orders
             interval=0.5,    # Delay between messages (seconds)
             topic='orders'
         )
         
-        # Close producer
+
         producer.close()
         
     except KeyboardInterrupt:

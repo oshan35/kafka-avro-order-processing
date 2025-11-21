@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AggregationState:
-    """State for aggregating price statistics"""
     count: int = 0
     sum: float = 0.0
     avg: float = 0.0
@@ -24,25 +23,15 @@ class AggregationState:
 
 
 class PriceAggregator:
-    """Real-time price aggregator with running averages"""
     
     def __init__(self):
-        """Initialize the aggregator with empty state"""
+
         self.state: Dict[str, AggregationState] = defaultdict(AggregationState)
         self.total_orders = 0
         self.total_revenue = 0.0
     
     def update(self, product: str, price: float) -> float:
-        """
-        Update running average for a product
-        
-        Args:
-            product: Product name
-            price: Product price
-            
-        Returns:
-            Updated average price for the product
-        """
+
         state = self.state[product]
         
         # Update statistics
@@ -59,27 +48,11 @@ class PriceAggregator:
         return state.avg
     
     def get_average(self, product: str) -> float:
-        """
-        Get current average for a product
-        
-        Args:
-            product: Product name
-            
-        Returns:
-            Average price (0.0 if product not found)
-        """
+
         return self.state[product].avg if product in self.state else 0.0
     
     def get_statistics(self, product: str) -> Dict:
-        """
-        Get detailed statistics for a product
-        
-        Args:
-            product: Product name
-            
-        Returns:
-            Dictionary with count, sum, average, min, max
-        """
+
         if product not in self.state:
             return {
                 'count': 0,
@@ -99,24 +72,14 @@ class PriceAggregator:
         }
     
     def get_all_statistics(self) -> Dict[str, dict]:
-        """
-        Get statistics for all products
-        
-        Returns:
-            Dictionary mapping product names to their statistics
-        """
+
         return {
             product: self.get_statistics(product)
             for product in self.state.keys()
         }
     
     def get_overall_statistics(self) -> Dict:
-        """
-        Get overall aggregation statistics
-        
-        Returns:
-            Dictionary with total orders, revenue, and average order value
-        """
+
         avg_order_value = self.total_revenue / self.total_orders if self.total_orders > 0 else 0.0
         
         return {
@@ -127,7 +90,6 @@ class PriceAggregator:
         }
     
     def print_summary(self):
-        """Print a formatted summary of all statistics"""
         logger.info("\n" + "=" * 80)
         logger.info("📊 PRICE AGGREGATION SUMMARY")
         logger.info("=" * 80)

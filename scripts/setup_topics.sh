@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Setup Kafka Topics Script
-# Creates necessary topics for the order processing system
 
 BOOTSTRAP_SERVER="localhost:9092"
 

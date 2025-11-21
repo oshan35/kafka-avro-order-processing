@@ -17,20 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 class DLQConsumer:
-    """Consumer for monitoring Dead Letter Queue messages"""
-    
+
     def __init__(
         self,
         bootstrap_servers='localhost:9092',
         group_id='dlq-monitor-group'
     ):
-        """
-        Initialize DLQ consumer
-        
-        Args:
-            bootstrap_servers: Kafka broker address
-            group_id: Consumer group ID
-        """
+
         self.bootstrap_servers = bootstrap_servers
         self.group_id = group_id
         
@@ -54,12 +47,7 @@ class DLQConsumer:
         logger.info(f"DLQ Consumer initialized - Group: {group_id}")
     
     def process_dlq_message(self, message_value: dict):
-        """
-        Process and log a DLQ message
-        
-        Args:
-            message_value: Parsed DLQ message
-        """
+
         self.stats['total_dlq_messages'] += 1
         
         # Extract information
@@ -92,12 +80,7 @@ class DLQConsumer:
         )
     
     def monitor_dlq(self, topics=['orders-dlq']):
-        """
-        Monitor DLQ topic and display failed messages
-        
-        Args:
-            topics: List of DLQ topics to monitor
-        """
+
         self.consumer.subscribe(topics)
         
         logger.info(f"🔍 Monitoring DLQ topics: {topics}")
@@ -135,7 +118,6 @@ class DLQConsumer:
             self.consumer.close()
     
     def print_statistics(self):
-        """Print DLQ statistics"""
         logger.info("\n" + "=" * 80)
         logger.info("📊 DLQ STATISTICS")
         logger.info("=" * 80)
@@ -163,7 +145,6 @@ class DLQConsumer:
 
 
 def main():
-    """Main execution function"""
     try:
         # Initialize DLQ consumer
         dlq_consumer = DLQConsumer()
