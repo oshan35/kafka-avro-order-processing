@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
 Order Producer
-Produces order messages to Kafka with Avro serialization
+Produces order messages to Kafka with JSON serialization
+(Note: For Avro, see order_producer_avro.py - using JSON for simplicity)
 """
 
 import time
 import random
+import json
 import logging
-from confluent_kafka import avro
-from confluent_kafka.avro import AvroProducer
+from confluent_kafka import Producer
 
 # Configure logging
 logging.basicConfig(
@@ -19,26 +20,20 @@ logger = logging.getLogger(__name__)
 
 
 class OrderProducer:
-    """Kafka producer for order messages using Avro serialization"""
+    """Kafka producer for order messages using JSON serialization"""
     
-    def __init__(self, bootstrap_servers='localhost:9092', schema_registry_url='http://localhost:8081'):
+    def __init__(self, bootstrap_servers='localhost:9092'):
         """
         Initialize the order producer
         
         Args:
             bootstrap_servers: Kafka broker address
-            schema_registry_url: Schema Registry URL
         """
         self.bootstrap_servers = bootstrap_servers
-        self.schema_registry_url = schema_registry_url
-        
-        # Load Avro schema
-        self.value_schema = avro.load('schemas/order.avsc')
         
         # Producer configuration
         self.config = {
             'bootstrap.servers': bootstrap_servers,
-            'schema.registry.url': schema_registry_url,
             
             # Reliability settings
             'acks': 'all',  # Wait for all replicas
@@ -57,10 +52,7 @@ class OrderProducer:
         }
         
         # Initialize producer
-        self.producer = AvroProducer(
-            self.config,
-            default_value_schema=self.value_schema
-        )
+        self.producer = Producer(self.config)
         
         logger.info(f"Order Producer initialized - Broker: {bootstrap_servers}")
     
@@ -75,9 +67,10 @@ class OrderProducer:
         if err:
             logger.error(f"❌ Delivery failed for order: {err}")
         else:
-            order_id = msg.value()['orderId']
+            # msg.key() contains the orderId if we set it
+            key = msg.key().decode('utf-8') if msg.key() else "UNKNOWN"
             logger.info(
-                f"✓ Delivered [{order_id}] to {msg.topic()} "
+                f"✓ Delivered [{key}] to {msg.topic()} "
                 f"[partition={msg.partition()}, offset={msg.offset()}]"
             )
     
@@ -132,9 +125,13 @@ class OrderProducer:
             topic: Target Kafka topic
         """
         try:
+            # Serialize to JSON
+            value_bytes = json.dumps(order).encode('utf-8')
+            
             self.producer.produce(
                 topic=topic,
-                value=order,
+                key=order['orderId'].encode('utf-8'),
+                value=value_bytes,
                 callback=self.delivery_callback
             )
             self.producer.poll(0)  # Trigger delivery callbacks

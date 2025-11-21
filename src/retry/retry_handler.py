@@ -201,9 +201,13 @@ class RetryHandler:
             return error
         
         if self.classify_error(error):
-            return RetryableError(str(error)) from error
+            wrapped_error = RetryableError(str(error))
+            wrapped_error.__cause__ = error
+            return wrapped_error
         else:
-            return PermanentError(str(error)) from error
+            wrapped_error = PermanentError(str(error))
+            wrapped_error.__cause__ = error
+            return wrapped_error
 
 
 def simulate_temporary_failure(attempt_count: list):

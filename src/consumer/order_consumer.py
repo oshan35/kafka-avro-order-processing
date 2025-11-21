@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """
 Order Consumer
-Consumes order messages from Kafka with Avro deserialization,
+Consumes order messages from Kafka with JSON deserialization,
 performs real-time price aggregation, and handles failures with retry logic
 """
 
 import sys
+import os
 import json
 import logging
-from confluent_kafka import Producer
-from confluent_kafka.avro import AvroConsumer
-from confluent_kafka import KafkaError
+from confluent_kafka import Consumer, Producer, KafkaError
 
 # Add parent directory to path for imports
-sys.path.append('..')
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from aggregator.price_aggregator import PriceAggregator
 from retry.retry_handler import RetryHandler, RetryableError, PermanentError
 
@@ -49,7 +48,6 @@ class OrderConsumer:
         # Consumer configuration
         consumer_config = {
             'bootstrap.servers': bootstrap_servers,
-            'schema.registry.url': schema_registry_url,
             'group.id': group_id,
             
             # Offset management
@@ -60,14 +58,10 @@ class OrderConsumer:
             'max.poll.interval.ms': 300000,  # 5 minutes max processing time
             'session.timeout.ms': 45000,
             'heartbeat.interval.ms': 3000,
-            
-            # Fetch settings
-            'fetch.min.bytes': 1,
-            'fetch.max.wait.ms': 500,
         }
         
         # Initialize consumer
-        self.consumer = AvroConsumer(consumer_config)
+        self.consumer = Consumer(consumer_config)
         
         # Initialize DLQ producer
         dlq_config = {
@@ -204,12 +198,15 @@ class OrderConsumer:
                         logger.error(f"Consumer error: {msg.error()}")
                         continue
                 
+                # Deserialize JSON message
+                order = json.loads(msg.value().decode('utf-8'))
+                
                 # Process message with retry logic
                 try:
                     self.retry_handler.execute_with_retry(
                         self.process_order,
-                        msg.value(),
-                        error_context=f"Order {msg.value().get('orderId', 'UNKNOWN')}"
+                        order,
+                        error_context=f"Order {order.get('orderId', 'UNKNOWN')}"
                     )
                     
                     # Commit offset after successful processing
